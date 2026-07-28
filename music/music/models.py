@@ -18,7 +18,7 @@ class Artist(models.Model):
     name = models.CharField(max_length=200)
     country = models.CharField(max_length=100, blank=True)
     biography = models.TextField(blank=True)
-    image = models.ImageField(upload_to="artists/", blank=True)
+    image = models.URLField(blank=True)
 
     class Meta:
         db_table = "artists"
