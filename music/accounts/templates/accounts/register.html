@@ -179,12 +179,21 @@
 
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
         <input
             type="text"
             name="first_name"
             class="form-control"
             placeholder="Full Name"
             required>
+        {% if form.first_name.errors %}
+            <div class="text-danger small mb-2">{{ form.first_name.errors|striptags }}</div>
+        {% endif %}
 
         <input
             type="email"
@@ -192,6 +201,9 @@
             class="form-control"
             placeholder="Email Address"
             required>
+        {% if form.email.errors %}
+            <div class="text-danger small mb-2">{{ form.email.errors|striptags }}</div>
+        {% endif %}
 
         <input
             type="text"
@@ -199,6 +211,9 @@
             class="form-control"
             placeholder="Username"
             required>
+        {% if form.username.errors %}
+            <div class="text-danger small mb-2">{{ form.username.errors|striptags }}</div>
+        {% endif %}
 
         <input
             type="password"
@@ -206,6 +221,9 @@
             class="form-control"
             placeholder="Password"
             required>
+        {% if form.password1.errors %}
+            <div class="text-danger small mb-2">{{ form.password1.errors|striptags }}</div>
+        {% endif %}
 
         <input
             type="password"
@@ -213,6 +231,9 @@
             class="form-control"
             placeholder="Confirm Password"
             required>
+        {% if form.password2.errors %}
+            <div class="text-danger small mb-2">{{ form.password2.errors|striptags }}</div>
+        {% endif %}
 
         <button class="btn-register">
             Create Account
