@@ -23,4 +23,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("accounts.urls")),
     path("", LoginView.as_view(template_name="accounts/login.html"), name="home"),
+    
+    path("accounts/", include("accounts.urls")),
+
+    path("", include("music.urls")),
 ]
