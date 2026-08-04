@@ -76,8 +76,12 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "music_recommendation",
+        "USER": "music_admin",
+        "PASSWORD": "music_admin",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
@@ -118,14 +122,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-LOGIN_REDIRECT_URL = "/"
-LOGOUT_REDIRECT_URL = "/accounts/login/"
-LOGIN_URL = "/accounts/login/"
-
-AUTH_USER_MODEL = "accounts.User"
-
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_REDIRECT_URL = "home"
 LOGOUT_REDIRECT_URL = "login"
 LOGIN_URL = "login"
+
+AUTH_USER_MODEL = "accounts.User"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
