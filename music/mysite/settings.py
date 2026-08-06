@@ -14,9 +14,14 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Local env file (ignored on Vercel, where real env vars are injected).
+load_dotenv(BASE_DIR.parent / ".env.local")
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -83,13 +88,27 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+def _database_url():
+    for key in (
+        "DATABASE_URL",
+        "storage_DATABASE_URL_UNPOOLED",
+        "storage_POSTGRES_URL_NON_POOLING",
+        "storage_DATABASE_URL",
+    ):
+        value = os.environ.get(key)
+        if value:
+            return value
+    return "postgresql://music_admin:music_admin@localhost:5432/music_recommendation"
+
+
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgresql://music_admin:music_admin@localhost:5432/music_recommendation",
+        default=_database_url(),
         conn_max_age=600,
         conn_health_checks=True,
     )
 }
+
 
 
 # Password validation
