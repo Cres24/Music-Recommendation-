@@ -70,7 +70,7 @@ ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,6 +81,20 @@ TEMPLATES = [
         },
     },
 ]
+# TEMPLATES = [
+#     {
+#         "BACKEND": "django.template.backends.django.DjangoTemplates",
+#         "DIRS": [],
+#         "APP_DIRS": True,
+#         "OPTIONS": {
+#             "context_processors": [
+#                 "django.template.context_processors.request",
+#                 "django.contrib.auth.context_processors.auth",
+#                 "django.contrib.messages.context_processors.messages",
+#             ],
+#         },
+#     },
+# ]
 
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
@@ -154,9 +168,13 @@ STORAGES = {
     },
 }
 
-LOGIN_REDIRECT_URL = "home"
-LOGOUT_REDIRECT_URL = "login"
-LOGIN_URL = "login"
+# LOGIN_REDIRECT_URL = "home"
+# LOGOUT_REDIRECT_URL = "login"
+# LOGIN_URL = "login"
+
+LOGIN_REDIRECT_URL = "/home/"
+LOGIN_URL = "/accounts/login/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
 
 AUTH_USER_MODEL = "accounts.User"
 
