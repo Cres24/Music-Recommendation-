@@ -31,7 +31,7 @@ def login_view(request):
     else:
         form = AuthenticationForm()
 
-    return render(request, "registration/login.html", {"form": form})
+    return render(request, "accounts/login.html", {"form": form})
 
 
 @login_required
