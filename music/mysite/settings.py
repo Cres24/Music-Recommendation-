@@ -154,9 +154,6 @@ STORAGES = {
     },
 }
 
-# LOGIN_REDIRECT_URL = "home"
-# LOGOUT_REDIRECT_URL = "login"
-# LOGIN_URL = "login"
 
 LOGIN_REDIRECT_URL = "/home/"
 LOGIN_URL = "/accounts/login/"
@@ -165,3 +162,8 @@ LOGOUT_REDIRECT_URL = "/accounts/login/"
 AUTH_USER_MODEL = "accounts.User"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+#spotify API credentials
+SPOTIFY_CLIENT_ID = os.environ.get("e2425f3019334710ba904c8676016455")
+SPOTIFY_CLIENT_SECRET = os.environ.get("cffb218e4eb747e7ac114dc614ae1cf8")
+SPOTIFY_REDIRECT_URI = os.environ.get("https://music-recommendation-ruby.vercel.app/home/")   
