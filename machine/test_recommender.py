@@ -46,6 +46,10 @@ def run(label, answers):
     artists = [r["artists"] for r in results]
     for a in set(artists):
         assert artists.count(a) <= 2, f"artist cap exceeded: {a}"
+    base62 = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+    for r in results:
+        tid = r.get("track_id", "")
+        assert len(tid) == 22 and set(tid) <= base62, f"bad track_id: {tid!r}"
 
     # Feature means over the returned songs (native units).
     indices = _result_rows(results)
