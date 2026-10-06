@@ -23,4 +23,9 @@ urlpatterns = [
         ),
         name="login",
     ),
+    path(
+    "preferences/",
+    views.music_preferences,
+    name="music_preferences"
+    ),
 ]

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Your Music Preferences</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #121212,
+                    #181818,
+                    #0f0f0f
+                );
+
+            color: white;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 900px;
+
+            margin: auto;
+
+            padding: 50px 0 80px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 45px;
+        }
+
+        .header h1 {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: #b3b3b3;
+            font-size: 17px;
+        }
+
+        .question {
+            background: #181818;
+
+            padding: 30px;
+
+            margin-bottom: 25px;
+
+            border-radius: 15px;
+
+            box-shadow:
+                0 5px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .question h2 {
+            font-size: 20px;
+
+            margin-top: 0;
+            margin-bottom: 22px;
+        }
+
+        .options {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(230px, 1fr)
+                );
+
+            gap: 12px;
+        }
+
+        .option {
+            position: relative;
+        }
+
+        .option input {
+            position: absolute;
+
+            opacity: 0;
+
+            pointer-events: none;
+        }
+
+        .option label {
+            display: block;
+
+            padding: 15px 18px;
+
+            background: #282828;
+
+            border: 2px solid transparent;
+
+            border-radius: 10px;
+
+            color: #eeeeee;
+
+            cursor: pointer;
+
+            transition:
+                background 0.2s,
+                border 0.2s,
+                transform 0.2s;
+        }
+
+        .option label:hover {
+            background: #333333;
+
+            transform: translateY(-2px);
+        }
+
+        .option input:checked + label {
+            background: #193d28;
+
+            border-color: #1ed760;
+
+            color: white;
+        }
+
+        .submit-container {
+            text-align: center;
+
+            margin-top: 40px;
+        }
+
+        .submit-button {
+            border: none;
+
+            background: #1ed760;
+
+            color: #000;
+
+            padding: 16px 45px;
+
+            border-radius: 30px;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+        .submit-button:hover {
+            transform: scale(1.05);
+
+            background: #1fdf64;
+        }
+
+        .error {
+            color: #ff6b6b;
+
+            margin-bottom: 20px;
+
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+
+            .container {
+                width: 94%;
+
+                padding-top: 30px;
+            }
+
+            .header h1 {
+                font-size: 30px;
+            }
+
+            .question {
+                padding: 22px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+
+        <h1>
+            Tell Us About Your Music 🎵
+        </h1>
+
+        <p>
+            Answer a few questions and we'll
+            personalize your recommendations.
+        </p>
+
+    </div>
+
+
+    <form method="POST">
+
+        {% csrf_token %}
+
+        {% if form.errors %}
+
+            <div class="error">
+                Please answer all the questions.
+            </div>
+
+        {% endif %}
+
+
+        <!-- QUESTION 1 -->
+
+        <div class="question">
+
+            <h2>
+                1. What kind of music do you usually enjoy most?
+            </h2>
+
+            <div class="options">
+
+                {% for radio in form.favorite_genre %}
+
+                    <div class="option">
+
+                        {{ radio.tag }}
+
+                        <label
+                            for="{{ radio.id_for_label }}"
+                        >
+                            {{ radio.choice_label }}
+                        </label>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- QUESTION 2 -->
+
+        <div class="question">
+
+            <h2>
+                2. What do you usually care about most in a song?
+            </h2>
+
+            <div class="options">
+
+                {% for radio in form.song_priority %}
+
+                    <div class="option">
+
+                        {{ radio.tag }}
+
+                        <label
+                            for="{{ radio.id_for_label }}"
+                        >
+                            {{ radio.choice_label }}
+                        </label>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- QUESTION 3 -->
+
+        <div class="question">
+
+            <h2>
+                3. What kind of mood do you usually want from music?
+            </h2>
+
+            <div class="options">
+
+                {% for radio in form.preferred_mood %}
+
+                    <div class="option">
+
+                        {{ radio.tag }}
+
+                        <label
+                            for="{{ radio.id_for_label }}"
+                        >
+                            {{ radio.choice_label }}
+                        </label>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- QUESTION 4 -->
+
+        <div class="question">
+
+            <h2>
+                4. When do you usually listen to music?
+            </h2>
+
+            <div class="options">
+
+                {% for radio in form.listening_context %}
+
+                    <div class="option">
+
+                        {{ radio.tag }}
+
+                        <label
+                            for="{{ radio.id_for_label }}"
+                        >
+                            {{ radio.choice_label }}
+                        </label>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- QUESTION 5 -->
+
+        <div class="question">
+
+            <h2>
+                5. What kind of songs are you most likely
+                to add to a playlist?
+            </h2>
+
+            <div class="options">
+
+                {% for radio in form.playlist_preference %}
+
+                    <div class="option">
+
+                        {{ radio.tag }}
+
+                        <label
+                            for="{{ radio.id_for_label }}"
+                        >
+                            {{ radio.choice_label }}
+                        </label>
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <div class="submit-container">
+
+            <button
+                type="submit"
+                class="submit-button"
+            >
+                Continue to Music →
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+</body>
+
+</html>
