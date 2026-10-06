@@ -1,7 +1,8 @@
 """Build the compact runtime artifact for the recommender.
 
-Reads the cleaned dataset, scales the 9 audio features to 0-1 (MinMax),
-and packs everything the runtime needs into ONE file:
+Reads the clustered dataset (dataset/tracks_clustered.csv: the cleaned
+dataset + cluster / cluster_name columns), scales the 9 audio features
+to 0-1 (MinMax), and packs everything the runtime needs into ONE file:
 
   machine/artifacts/artifact.npz
 
@@ -36,7 +37,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from rules import FEATURES  # noqa: E402
 
 BASE = Path(__file__).parent
-SRC = BASE / "dataset" / "dataset.csv"
+SRC = BASE / "dataset" / "tracks_clustered.csv"
 OUT_DIR = BASE / "artifacts"
 OUT = OUT_DIR / "artifact.npz"
 MAX_BYTES = 12 * 1024 * 1024
