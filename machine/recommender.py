@@ -295,11 +295,19 @@ def rerank_mmr(candidates: np.ndarray, scores: np.ndarray, k: int = 20) -> list:
 
     picked, available = [], np.ones(len(pool), dtype=bool)
     artist_count, genre_count = {}, {}
+    # Same song can appear as several rows (album/version variants, or the
+    # same track under two genres in a Mix). Key on name+artist to block it.
+    pool_keys = [(art.track_names[p], art.artist_names[art.artist_codes[p]])
+                 for p in pool]
+    picked_keys = set()
 
     while len(picked) < k and available.any():
         best_i, best_val = -1, -np.inf
         for i in range(len(pool)):
             if not available[i]:
+                continue
+            if pool_keys[i] in picked_keys:
+                available[i] = False  # duplicate of an already-picked song
                 continue
             artist = int(art.artist_codes[pool[i]])
             genre = int(art.genre_codes[pool[i]])
@@ -316,10 +324,16 @@ def rerank_mmr(candidates: np.ndarray, scores: np.ndarray, k: int = 20) -> list:
             if val > best_val:
                 best_val, best_i = val, i
         if best_i < 0:  # caps blocked everything: fill up without them
-            best_i = int(np.flatnonzero(available)[
-                np.argmax(pool_scores[available])])
+            fresh = [i for i in np.flatnonzero(available)
+                     if pool_keys[i] not in picked_keys]
+            if not fresh:
+                fresh = list(np.flatnonzero(available))
+                if not fresh:
+                    break
+            best_i = fresh[int(np.argmax(pool_scores[fresh]))]
         available[best_i] = False
         picked.append(best_i)
+        picked_keys.add(pool_keys[best_i])
         artist = int(art.artist_codes[pool[best_i]])
         genre = int(art.genre_codes[pool[best_i]])
         artist_count[artist] = artist_count.get(artist, 0) + 1

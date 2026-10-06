@@ -50,6 +50,16 @@ K_PREFERRED = range(8, 16)  # user asked for ~8-15 clusters
 RANDOM_STATE = 42
 SAMPLE_SIZE = 10_000
 
+# Manual corrections for auto-names that missed the mark. Keyed by cluster
+# id, which is deterministic here (same data + RANDOM_STATE=42), based on
+# the profile table printed by this script.
+NAME_OVERRIDES = {
+    2: "Feel-good dance",              # valence 0.70, danceability 0.69
+    3: "High-energy electric",         # energy 0.81, acousticness 0.07
+    5: "Quiet ambient instrumental",   # loudness -21 dB, energy 0.17
+    7: "Live spoken word",             # speechiness 0.88, liveness 0.75
+}
+
 
 def load():
     df = pd.read_csv(DATASET)
@@ -115,6 +125,11 @@ def profile_and_name(df, labels, X):
             name = f"{name} ({word})"
         used.add(name)
         names[c] = name
+    for c, name in NAME_OVERRIDES.items():  # manual corrections win
+        if c in names and name not in used:
+            used.discard(names[c])
+            names[c] = name
+            used.add(name)
     return names, z, means, sizes
 
 
