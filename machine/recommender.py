@@ -76,6 +76,10 @@ class Artifact:
         ]
         self.track_names_cf = [t.casefold() for t in self.track_names]
 
+        # Spotify ids are decoded per-row on demand (playback feature).
+        self.id_offsets = npz["track_id_offsets"]
+        self.id_data = npz["track_id_data"]
+
         self.centroids = npz["centroids"].astype(np.float32)
         self.feature_mean = npz["feature_mean"].astype(np.float32)
         self.popularity_mean = float(npz["popularity_mean"])
@@ -87,12 +91,17 @@ class Artifact:
         i = self.index[feature]
         return float(np.clip((native_value - self.min[i]) / self.range[i], 0.0, 1.0))
 
+    def track_id(self, i):
+        o = self.id_offsets
+        return bytes(self.id_data[o[i]:o[i + 1]]).decode("utf-8")
+
     def display(self, i):
         return {
             "track_name": self.track_names[i],
             "artists": self.artist_names[self.artist_codes[i]],
             "track_genre": self.genre_names[self.genre_codes[i]],
             "cluster_name": self.cluster_names[self.cluster_codes[i]],
+            "track_id": self.track_id(i),
             "popularity": int(self.pop[i]),
             "explicit": bool(self.explicit[i]),
         }

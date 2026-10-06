@@ -12,38 +12,87 @@ Home
         Good Evening 👋
     </h2>
 
-    <h5 class="mb-3">
-        Recommended For You
-    </h5>
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
 
-    <div class="row">
+        <div>
+            <h5 class="mb-1">
+                Recommended For You
+            </h5>
+            {% if summary %}
+                <p class="text-secondary mb-0">
+                    Because you chose: {{ summary|join:" · " }}
+                </p>
+            {% endif %}
+        </div>
 
-        {% for i in "12345678" %}
+        <a
+            href="{% url 'music_preferences' %}"
+            class="btn btn-outline-light btn-sm mt-2"
+        >
+            <i class="bi bi-arrow-repeat"></i>
+            Retake the questions
+        </a>
 
-        <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    </div>
 
-            <div class="card card-dark">
+    {% if error %}
+        <div class="alert alert-warning" role="alert">
+            {{ error }}
+        </div>
+    {% endif %}
 
-                <img src="https://picsum.photos/300?random={{ forloop.counter }}"
-                     class="card-img-top">
+    {% if results %}
 
-                <div class="card-body">
+        <div class="row">
 
-                    <h5>Song {{ forloop.counter }}</h5>
+            {% for song in results %}
 
-                    <p class="text-secondary">
-                        Artist Name
-                    </p>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+
+                    <div
+                        class="card card-dark"
+                        data-spotify-id="{{ song.track_id }}"
+                    >
+
+                        <img
+                            src="https://picsum.photos/300?random={{ forloop.counter }}"
+                            class="card-img-top"
+                            alt=""
+                        >
+
+                        <div class="card-body">
+
+                            <h5>{{ song.track_name }}</h5>
+
+                            <p class="text-secondary mb-2">
+                                {{ song.artists }}
+                            </p>
+
+                            <span class="badge rounded-pill bg-success">
+                                {{ song.track_genre }}
+                            </span>
+
+                            <span class="badge rounded-pill bg-secondary">
+                                {{ song.cluster_name }}
+                            </span>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
-            </div>
+            {% endfor %}
 
         </div>
 
-        {% endfor %}
+    {% elif not error %}
 
-    </div>
+        <p class="text-secondary">
+            No recommendations yet — answer the questions to get started.
+        </p>
+
+    {% endif %}
 
 </div>
 

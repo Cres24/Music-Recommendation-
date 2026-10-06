@@ -14,6 +14,7 @@ Contents:
   artist_codes  int32   (N,)  + artist_names
   cluster_codes uint8   (N,)  + cluster_names   (k,)
   track names                 CSR blob (offsets + utf-8 bytes)
+  track ids                   CSR blob (Spotify ids, for later playback)
   centroids     float16 (k, 9)  cluster centres in scaled space
   scaler_min/   float64 (9,)    to map native-unit targets -> scaled
   scaler_max
@@ -86,6 +87,9 @@ def main():
     cluster_codes, cluster_names = _names(df["cluster_name"])
     cluster_codes = cluster_codes.astype(np.uint8)
     track_offsets, track_data = _csr(df["track_name"].tolist())
+    # Spotify track ids: needed later for playback (embed player / API).
+    # Kept as a CSR blob and decoded lazily per row at runtime.
+    id_offsets, id_data = _csr(df["track_id"].tolist())
 
     # Cluster centroids in scaled space (used for novelty scoring + filters).
     k = len(cluster_names)
@@ -105,6 +109,8 @@ def main():
         "cluster_names": cluster_names,
         "track_offsets": track_offsets,
         "track_data": track_data,
+        "track_id_offsets": id_offsets,
+        "track_id_data": id_data,
         "centroids": centroids.astype(np.float16),
         "scaler_min": lo,
         "scaler_max": hi,
