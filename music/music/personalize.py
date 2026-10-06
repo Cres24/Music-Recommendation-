@@ -93,7 +93,7 @@ def summary_from_preference(preference):
     """Human-readable labels of the saved choices, for the page header."""
     labels = []
     for field, _ in _FIELDS:
-        field_obj = getattr(MusicPreferenceForm, field)
+        field_obj = MusicPreferenceForm.base_fields[field]
         value = getattr(preference, field, "")
         labels.append(dict(field_obj.choices).get(value, value))
     return labels
