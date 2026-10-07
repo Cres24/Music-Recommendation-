@@ -7,3 +7,5 @@ dj-database-url==2.3.0
 python-dotenv==1.1.1
 # recommender runtime (machine/recommender.py reads the .npz artifact)
 numpy==2.5.3
+# spotify api client (accounts/spotify.py)
+requests>=2.32.0

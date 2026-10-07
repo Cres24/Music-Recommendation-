@@ -33,3 +33,24 @@ class MusicPreference(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Music Preferences"
+
+
+class SpotifyToken(models.Model):
+    """OAuth tokens for a connected Spotify account."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="spotify_token",
+    )
+    access_token = models.CharField(max_length=512)
+    refresh_token = models.CharField(max_length=512)
+    expires_at = models.DateTimeField()
+    scope = models.TextField(blank=True, default="")
+    spotify_user_id = models.CharField(max_length=100, blank=True, default="")
+    display_name = models.CharField(max_length=200, blank=True, default="")
+    # "premium" | "free" | "open" — Web Playback SDK needs premium
+    product = models.CharField(max_length=20, blank=True, default="")
+
+    def __str__(self):
+        return f"SpotifyToken({self.user.username})"

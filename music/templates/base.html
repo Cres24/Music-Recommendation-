@@ -885,11 +885,29 @@
 
         <!-- Current Song -->
 
-        <div>
+        <div class="np-info" style="display:flex; align-items:center; gap:10px; min-width:0;">
 
-            <strong>
-                No song playing
-            </strong>
+            <img
+                id="np-art"
+                src=""
+                alt=""
+                style="display:none; width:48px; height:48px; border-radius:6px; object-fit:cover; flex:none;"
+            >
+
+            <div style="min-width:0;">
+
+                <strong id="np-title">
+                    No song playing
+                </strong>
+
+                <div
+                    id="np-artist"
+                    class="text-secondary"
+                    style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                >
+                </div>
+
+            </div>
 
         </div>
 
@@ -900,11 +918,11 @@
 
             <div class="controls">
 
-                <i class="bi bi-skip-backward-fill"></i>
+                <i class="bi bi-skip-backward-fill" id="btn-prev"></i>
 
-                <i class="bi bi-play-circle-fill fs-2"></i>
+                <i class="bi bi-play-circle-fill fs-2" id="btn-toggle"></i>
 
-                <i class="bi bi-skip-forward-fill"></i>
+                <i class="bi bi-skip-forward-fill" id="btn-next"></i>
 
             </div>
 
@@ -915,7 +933,8 @@
 
                 <div
                     class="progress-bar"
-                    style="width:35%"
+                    id="np-progress-bar"
+                    style="width:0%"
                 >
                 </div>
 
@@ -928,7 +947,7 @@
 
         <div>
 
-            <i class="bi bi-volume-up-fill fs-4"></i>
+            <i class="bi bi-volume-up-fill fs-4" id="btn-volume" style="cursor:pointer;"></i>
 
         </div>
 
@@ -990,6 +1009,369 @@
             });
 
     </script>
+
+
+    <!-- ==============================
+         SPOTIFY WEB PLAYBACK SDK
+    ============================== -->
+
+    {% if user.is_authenticated %}
+
+        <script>
+
+            (function () {
+
+                "use strict";
+
+                var TOKEN_URL = "{% url 'spotify_token' %}";
+
+                var state = {
+                    player: null,
+                    deviceId: null,
+                    ready: false,
+                    premium: false,
+                    token: null,
+                    tokenFetchedAt: 0,
+                    tokenTtl: 0,
+                    muted: false,
+                    paused: true
+                };
+
+
+                /* ---- token (server refreshes it when expired) ---- */
+
+                async function getToken() {
+
+                    var now = Date.now();
+
+                    if (state.token && now - state.tokenFetchedAt < state.tokenTtl) {
+
+                        return state.token;
+                    }
+
+                    var data = null;
+
+                    try {
+
+                        var res = await fetch(TOKEN_URL, { credentials: "same-origin" });
+
+                        if (res.ok) data = await res.json();
+
+                    } catch (err) {
+
+                        console.warn("spotify token fetch failed", err);
+
+                    }
+
+                    state.tokenFetchedAt = now;
+
+                    if (!data || !data.access_token) {
+
+                        // Not connected (or transient failure) — retry shortly.
+                        state.token = null;
+                        state.tokenTtl = 30 * 1000;
+
+                        return null;
+                    }
+
+                    state.token = data.access_token;
+                    state.tokenTtl = Math.max((data.expires_in || 3600) - 120, 30) * 1000;
+                    state.premium = data.product === "premium";
+
+                    return state.token;
+                }
+
+
+                /* ---- player bar helpers ---- */
+
+                function setText(id, text) {
+
+                    var el = document.getElementById(id);
+
+                    if (el) el.textContent = text;
+                }
+
+                function updateProgress(position, duration) {
+
+                    var bar = document.getElementById("np-progress-bar");
+
+                    if (!bar) return;
+
+                    var pct = duration ? Math.min(100, (position / duration) * 100) : 0;
+
+                    bar.style.width = pct + "%";
+                }
+
+                function updateToggleIcon() {
+
+                    var el = document.getElementById("btn-toggle");
+
+                    if (!el) return;
+
+                    el.className = "bi fs-2 " +
+                        (state.paused ? "bi-play-circle-fill" : "bi-pause-circle-fill");
+                }
+
+                function updateNowPlaying(playerState) {
+
+                    var track = playerState &&
+                        playerState.track_window &&
+                        playerState.track_window.current_track;
+
+                    if (!track) return;
+
+                    setText("np-title", track.name);
+
+                    setText(
+                        "np-artist",
+                        (track.artists || []).map(function (a) { return a.name; }).join(", ")
+                    );
+
+                    var art = document.getElementById("np-art");
+
+                    if (art) {
+
+                        var images = (track.album && track.album.images) || [];
+
+                        if (images.length) {
+
+                            art.src = images[images.length - 1].url;
+                            art.style.display = "block";
+                        }
+                    }
+                }
+
+
+                /* ---- playback ---- */
+
+                async function ensureDevice() {
+
+                    if (!state.deviceId) return;
+
+                    var token = await getToken();
+
+                    if (!token) return;
+
+                    try {
+
+                        await fetch("https://api.spotify.com/v1/me/player", {
+
+                            method: "PUT",
+
+                            headers: {
+                                "Authorization": "Bearer " + token,
+                                "Content-Type": "application/json"
+                            },
+
+                            body: JSON.stringify({ device_ids: [state.deviceId] })
+                        });
+
+                    } catch (err) {
+
+                        console.warn("device transfer failed", err);
+                    }
+                }
+
+                async function sendPlay(trackId) {
+
+                    await ensureDevice();
+
+                    var ok = await state.player.play({
+                        uris: ["spotify:track:" + trackId]
+                    });
+
+                    if (ok === false) throw new Error("play command rejected");
+
+                    return true;
+                }
+
+                async function playTrack(trackId) {
+
+                    if (!state.player || !state.ready || !state.premium) return false;
+
+                    if (!(await getToken())) return false;
+
+                    try {
+
+                        return await sendPlay(trackId);
+
+                    } catch (err) {
+
+                        // Device may have gone stale — transfer once more and retry.
+                        try {
+
+                            return await sendPlay(trackId);
+
+                        } catch (err2) {
+
+                            console.warn("playback failed", err2);
+
+                            return false;
+                        }
+                    }
+                }
+
+
+                /* ---- embed fallback (no connection / not premium) ---- */
+
+                function embedSpotify(card, trackId) {
+
+                    if (!card) return;
+
+                    var media = card.querySelector(".card-media");
+
+                    if (!media || media.querySelector("iframe")) return;
+
+                    media.innerHTML =
+                        '<iframe src="https://open.spotify.com/embed/track/' + trackId +
+                        '?utm_source=generator" width="100%" height="152" frameborder="0" ' +
+                        'allowtransparency="true" ' +
+                        'allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" ' +
+                        'loading="lazy"></iframe>';
+                }
+
+
+                /* ---- SDK init ---- */
+
+                async function startPlayer() {
+
+                    var token = await getToken();
+
+                    if (!token) return;
+
+                    var player = new Spotify.Player({
+                        name: "Music Recommendation Web Player",
+                        getOAuthToken: function (cb) {
+                            getToken().then(function (t) { cb(t || ""); });
+                        },
+                        volume: 0.8
+                    });
+
+                    state.player = player;
+
+                    player.addListener("ready", function (event) {
+
+                        state.deviceId = event.device_id;
+                        state.ready = true;
+                    });
+
+                    player.addListener("not_ready", function () {
+
+                        state.ready = false;
+                    });
+
+                    player.addListener("player_state_changed", function (playerState) {
+
+                        if (!playerState) return;
+
+                        state.paused = !!playerState.paused;
+
+                        updateNowPlaying(playerState);
+                        updateToggleIcon();
+                        updateProgress(playerState.position, playerState.duration);
+                    });
+
+                    player.addListener("progress", function (event) {
+
+                        updateProgress(event.position, event.duration);
+                    });
+
+                    [
+                        "initialization_error",
+                        "authentication_error",
+                        "account_error",
+                        "playback_error"
+                    ].forEach(function (name) {
+
+                        player.addListener(name, function (err) {
+
+                            console.warn("spotify player " + name, err);
+
+                            if (name !== "playback_error") {
+
+                                state.ready = false;
+                            }
+                        });
+                    });
+
+                    player.connect();
+                }
+
+
+                /* ---- bar controls ---- */
+
+                function on(id, handler) {
+
+                    var el = document.getElementById(id);
+
+                    if (el) el.addEventListener("click", handler);
+                }
+
+                on("btn-prev", function () {
+                    if (state.player) state.player.previousTrack();
+                });
+
+                on("btn-next", function () {
+                    if (state.player) state.player.nextTrack();
+                });
+
+                on("btn-toggle", function () {
+                    if (state.player) state.player.togglePlay();
+                });
+
+                on("btn-volume", async function () {
+
+                    if (!state.player) return;
+
+                    state.muted = !state.muted;
+
+                    await state.player.setVolume(state.muted ? 0 : 0.8);
+
+                    var el = document.getElementById("btn-volume");
+
+                    if (el) {
+
+                        el.className = "bi fs-4 " +
+                            (state.muted ? "bi-volume-mute-fill" : "bi-volume-up-fill");
+                    }
+                });
+
+
+                /* ---- public API for the home page ---- */
+
+                window.MusicApp = {
+
+                    playTrack: playTrack,
+
+                    embed: embedSpotify,
+
+                    available: function () {
+
+                        return !!(state.player && state.ready && state.premium && state.token);
+                    }
+                };
+
+
+                /* Only boot the SDK for users who connected Spotify. */
+
+                getToken().then(function (token) {
+
+                    if (!token) return;
+
+                    window.onSpotifyWebPlaybackSDKReady = startPlayer;
+
+                    var sdk = document.createElement("script");
+
+                    sdk.src = "https://sdk.scdn.co/spotify-player.js";
+
+                    document.head.appendChild(sdk);
+                });
+
+            })();
+
+        </script>
+
+    {% endif %}
 
 
     {% block extra_js %}

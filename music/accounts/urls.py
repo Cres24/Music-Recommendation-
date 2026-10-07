@@ -28,4 +28,8 @@ urlpatterns = [
     views.music_preferences,
     name="music_preferences"
     ),
+    path("spotify/connect/", views.spotify_connect, name="spotify_connect"),
+    path("spotify/callback/", views.spotify_callback, name="spotify_callback"),
+    path("spotify/token/", views.spotify_token, name="spotify_token"),
+    path("spotify/disconnect/", views.spotify_disconnect, name="spotify_disconnect"),
 ]
