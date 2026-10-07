@@ -4,6 +4,84 @@
 Home
 {% endblock %}
 
+{% block extra_css %}
+
+    <style>
+
+        .card-dark { transition: transform 0.15s, box-shadow 0.15s; }
+        .card-dark:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+        }
+        .card-dark { cursor: pointer; }
+
+        .card-media {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            background: #222;
+            overflow: hidden;
+        }
+        .card-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-media iframe {
+            display: block;
+        }
+
+        .play-badge {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1DB954;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: 0.2s;
+            pointer-events: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        .card-dark:hover .play-badge { opacity: 1; transform: translateY(0); }
+
+        .unavailable-badge {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+        }
+
+        .spotify-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .spotify-controls input {
+            background: #181818;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 20px;
+            padding: 6px 14px;
+            min-width: 220px;
+        }
+        .spotify-controls input:focus {
+            background: #181818;
+            border-color: #1DB954;
+            color: #fff;
+            box-shadow: none;
+        }
+
+    </style>
+
+{% endblock %}
+
 {% block content %}
 
 <div class="container-fluid">
@@ -11,6 +89,17 @@ Home
     <h2 class="mb-4">
         Good Evening 👋
     </h2>
+
+    {% if banner %}
+        <div class="alert alert-{{ banner.kind }} d-flex align-items-center justify-content-between flex-wrap gap-2" role="alert">
+            <span>{{ banner.text }}</span>
+            {% if banner.url %}
+                <a href="{{ banner.url }}" target="_blank" rel="noopener" class="btn btn-sm btn-light">
+                    Open in Spotify <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
 
     <div class="d-flex flex-wrap align-items-center justify-content-between mb-4">
 
@@ -25,15 +114,67 @@ Home
             {% endif %}
         </div>
 
-        <a
-            href="{% url 'music_preferences' %}"
-            class="btn btn-outline-light btn-sm mt-2"
-        >
-            <i class="bi bi-arrow-repeat"></i>
-            Retake the questions
-        </a>
+        <div class="spotify-controls mt-2">
+
+            {% if spotify_connected %}
+
+                <form
+                    method="post"
+                    action="{% url 'create_playlist' %}"
+                    class="d-flex flex-wrap align-items-center gap-2"
+                >
+                    {% csrf_token %}
+
+                    <input
+                        type="text"
+                        name="playlist_name"
+                        placeholder="Playlist name (optional)"
+                        maxlength="100"
+                    >
+
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-spotify"></i>
+                        Save to my Spotify
+                    </button>
+                </form>
+
+                <a
+                    href="{% url 'spotify_disconnect' %}"
+                    class="btn btn-outline-secondary btn-sm"
+                >
+                    Disconnect
+                </a>
+
+            {% else %}
+
+                <a href="{% url 'spotify_connect' %}" class="btn btn-success btn-sm">
+                    <i class="bi bi-spotify"></i>
+                    Connect Spotify
+                </a>
+
+            {% endif %}
+
+            <a
+                href="{% url 'music_preferences' %}"
+                class="btn btn-outline-light btn-sm"
+            >
+                <i class="bi bi-arrow-repeat"></i>
+                Retake the questions
+            </a>
+
+        </div>
 
     </div>
+
+    {% if not spotify_connected %}
+
+        <div class="alert alert-dark border border-secondary" role="alert">
+            <i class="bi bi-info-circle"></i>
+            Connect Spotify to play songs right on this page and save the list as a playlist.
+            Without it you can still preview tracks with the embedded player.
+        </div>
+
+    {% endif %}
 
     {% if error %}
         <div class="alert alert-warning" role="alert">
@@ -52,13 +193,28 @@ Home
                     <div
                         class="card card-dark"
                         data-spotify-id="{{ song.track_id }}"
+                        data-track-name="{{ song.track_name }}"
                     >
 
-                        <img
-                            src="https://picsum.photos/300?random={{ forloop.counter }}"
-                            class="card-img-top"
-                            alt=""
-                        >
+                        <div class="card-media">
+
+                            {% if song.image_url %}
+                                <img src="{{ song.image_url }}" alt="">
+                            {% else %}
+                                <img src="https://picsum.photos/300?random={{ forloop.counter }}" alt="">
+                            {% endif %}
+
+                            {% if not song.available %}
+                                <span class="badge bg-danger unavailable-badge">
+                                    Unavailable
+                                </span>
+                            {% endif %}
+
+                            <span class="play-badge">
+                                <i class="bi bi-play-fill"></i>
+                            </span>
+
+                        </div>
 
                         <div class="card-body">
 
@@ -95,5 +251,39 @@ Home
     {% endif %}
 
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+
+    <script>
+
+        document.addEventListener("click", function (event) {
+
+            var card = event.target.closest(".card-dark[data-spotify-id]");
+
+            if (!card) return;
+
+            // Let clicks on an already-embedded player pass through.
+            if (event.target.closest("iframe")) return;
+
+            var trackId = card.getAttribute("data-spotify-id");
+
+            if (!trackId) return;
+
+            if (window.MusicApp && window.MusicApp.available()) {
+
+                window.MusicApp.playTrack(trackId).then(function (ok) {
+
+                    if (!ok) window.MusicApp.embed(card, trackId);
+                });
+
+            } else if (window.MusicApp) {
+
+                window.MusicApp.embed(card, trackId);
+            }
+        });
+
+    </script>
 
 {% endblock %}

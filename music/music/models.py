@@ -104,3 +104,22 @@ class ListeningHistory(models.Model):
 
     def __str__(self):
         return f"{self.user.username} listened to {self.song.title} at {self.played_at}"
+
+
+class SpotifyTrack(models.Model):
+    """Cache of Spotify catalogue lookups for artifact track ids.
+
+    Filled on demand, one row per track we've shown: album art URL and
+    whether the id still resolves (some 2022 dataset ids have been
+    removed since). After the first render, pages cost zero API calls.
+    """
+
+    track_id = models.CharField(max_length=22, primary_key=True)
+    image_url = models.URLField(blank=True, default="")
+    found = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = "spotify_tracks"
+
+    def __str__(self):
+        return f"SpotifyTrack({self.track_id})"
