@@ -24,16 +24,31 @@ def register(request):
 
 def login_view(request):
     if request.method == "POST":
-        form = AuthenticationForm(request, data=request.POST)
+        form = AuthenticationForm(
+            request,
+            data=request.POST
+        )
 
         if form.is_valid():
             user = form.get_user()
             login(request, user)
-            return redirect("home")   # Redirect after login
-    else:
-        form = AuthenticationForm()
+            return redirect("home")
 
-    return render(request, "accounts/login.html", {"form": form})
+        # Invalid credentials: render the same bound form.
+        # The email/username remains filled in.
+        return render(
+            request,
+            "accounts/login.html",
+            {"form": form}
+        )
+
+    form = AuthenticationForm(request)
+
+    return render(
+        request,
+        "accounts/login.html",
+        {"form": form}
+    )
 
 
 @login_required
@@ -85,7 +100,6 @@ def music_preferences(request):
             "form": form
         }
     )
-
 
 # ---------------------------------------------------------------------------
 # Spotify connection (OAuth + token endpoint for the browser player)
