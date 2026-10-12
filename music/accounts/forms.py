@@ -1,10 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django import forms
 from .models import User
+from django.contrib.auth import get_user_model
 
-
-from .models import User
 
 
 class LoginForm(AuthenticationForm):
@@ -169,3 +167,78 @@ class MusicPreferenceForm(forms.ModelForm):
             "listening_context",
             "playlist_preference",
         ]
+
+
+User = get_user_model()
+
+
+class RegisterForm(UserCreationForm):
+    full_name = forms.CharField(
+        max_length=150,
+        label="Full Name",
+        widget=forms.TextInput(attrs={
+            "placeholder": "Full Name",
+            "autocomplete": "name",
+        }),
+    )
+
+    email = forms.EmailField(
+        label="Email Address",
+        widget=forms.EmailInput(attrs={
+            "placeholder": "Email Address",
+            "autocomplete": "email",
+        }),
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ("full_name", "email", "username")
+        widgets = {
+            "username": forms.TextInput(attrs={
+                "placeholder": "Username",
+                "autocomplete": "username",
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["password1"].label = "Password"
+        self.fields["password1"].widget.attrs.update({
+            "placeholder": "Password",
+            "autocomplete": "new-password",
+        })
+
+        self.fields["password2"].label = "Confirm Password"
+        self.fields["password2"].widget.attrs.update({
+            "placeholder": "Confirm Password",
+            "autocomplete": "new-password",
+        })
+
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "form-control"
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(
+                "An account with this email address already exists."
+            )
+
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+
+        full_name = self.cleaned_data["full_name"].strip()
+        name_parts = full_name.split(maxsplit=1)
+
+        user.first_name = name_parts[0]
+        user.last_name = name_parts[1] if len(name_parts) > 1 else ""
+        user.email = self.cleaned_data["email"]
+
+        if commit:
+            user.save()
+
+        return user
