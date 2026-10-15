@@ -1076,7 +1076,11 @@
 
                     state.token = data.access_token;
                     state.tokenTtl = Math.max((data.expires_in || 3600) - 120, 30) * 1000;
-                    state.premium = data.product === "premium";
+                    // Feb 2026: Spotify no longer returns `product` from /me.
+                    // Assume premium and let the SDK's account_error (fired for
+                    // free accounts) disable the in-page player so we fall back
+                    // to the embed.
+                    state.premium = data.product ? data.product === "premium" : true;
 
                     return state.token;
                 }
