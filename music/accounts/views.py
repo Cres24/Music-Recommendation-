@@ -110,6 +110,7 @@ import secrets
 from datetime import timedelta
 from urllib.parse import urlencode
 
+import requests
 from django.http import JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -120,8 +121,13 @@ from .models import SpotifyToken
 spotify_logger = logging.getLogger(__name__)
 
 
-def _home(param: str):
-    return redirect(reverse("home") + "?" + urlencode({"spotify": param}))
+def _home(param: str, why: str = ""):
+    params = {"spotify": param}
+    if why:
+        # Temporary diagnostic: surfaced in the URL so OAuth failures are
+        # visible without server-log access. Remove once resolved.
+        params["why"] = why
+    return redirect(reverse("home") + "?" + urlencode(params))
 
 
 @login_required
@@ -164,11 +170,22 @@ def spotify_callback(request):
         token_row.display_name = me.get("display_name", "")
         token_row.product = me.get("product", "")
         token_row.save()
-    except Exception:
+    except requests.HTTPError as exc:
+        detail = ""
+        if exc.response is not None:
+            try:
+                detail = exc.response.json().get("error", "")
+            except Exception:
+                detail = f"http{exc.response.status_code}"
         spotify_logger.exception(
             "spotify oauth failed for %s", request.user.username
         )
-        return _home("auth_failed")
+        return _home("auth_failed", detail or "http_error")
+    except Exception as exc:
+        spotify_logger.exception(
+            "spotify oauth failed for %s", request.user.username
+        )
+        return _home("auth_failed", type(exc).__name__)
     return _home("connected")
 
 
