@@ -171,16 +171,16 @@ def spotify_callback(request):
         token_row.product = me.get("product", "")
         token_row.save()
     except requests.HTTPError as exc:
-        detail = ""
-        if exc.response is not None:
-            try:
-                detail = exc.response.json().get("error", "")
-            except Exception:
-                detail = f"http{exc.response.status_code}"
+        resp = exc.response
+        if resp is None:
+            detail = "http_error"
+        else:
+            body = " ".join((resp.text or "").split())[:180]
+            detail = f"HTTP{resp.status_code} {resp.url} :: {body}"
         spotify_logger.exception(
             "spotify oauth failed for %s", request.user.username
         )
-        return _home("auth_failed", detail or "http_error")
+        return _home("auth_failed", detail)
     except Exception as exc:
         spotify_logger.exception(
             "spotify oauth failed for %s", request.user.username
